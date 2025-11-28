@@ -22,9 +22,7 @@ const WHATSAPP_NUMBER = "6282241900467";
 
 // ---- Cart logic (localStorage) ----
 const CART_KEY = "herbaprima_cart_v1";
-function getCart(){
-  try{ return JSON.parse(localStorage.getItem(CART_KEY))||[]; }catch(e){ return []; }
-}
+function getCart(){ try{ return JSON.parse(localStorage.getItem(CART_KEY))||[]; }catch(e){ return []; } }
 function saveCart(cart){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 function addToCart(id, qty=1){
   const cart = getCart();
@@ -54,9 +52,7 @@ function cartSummary(){
 }
 
 // ---- Render functions & utils ----
-function rupiah(v){
-  return 'Rp' + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
+function rupiah(v){ return 'Rp' + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
 
 function renderProductsGrid(targetId, products){
   const el = document.getElementById(targetId);
@@ -76,7 +72,6 @@ function renderProductsGrid(targetId, products){
     `;
     el.appendChild(card);
   });
-  // attach add buttons
   el.querySelectorAll('[data-add]').forEach(b=>{
     b.addEventListener('click', ev=>{
       const id = parseInt(b.getAttribute('data-add'),10);
@@ -136,7 +131,8 @@ function refreshCartUI(){
       `;
       cartItemsEl.appendChild(div);
     });
-    document.getElementById('cartTotal').textContent = rupiah(total);
+    const totalEl = document.getElementById('cartTotal');
+    if(totalEl) totalEl.textContent = rupiah(total);
 
     // events
     cartItemsEl.querySelectorAll('.inc').forEach(b=>{
@@ -167,100 +163,31 @@ function refreshCartUI(){
   }
 }
 
-function getQty(id){
-  const cart = getCart();
-  const it = cart.find(x=>x.id===id); return it?it.qty:0;
-}
-
-// ---- Product detail page rendering ----
-function renderProductDetail(){
-  const el = document.getElementById('productDetail');
-  if(!el) return;
-  const qp = new URLSearchParams(location.search);
-  const id = parseInt(qp.get('id')||'0',10);
-  const prod = PRODUCTS.find(p=>p.id===id) || PRODUCTS[0];
-  el.innerHTML = `
-    <div class="product-detail-card" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div>
-        <div style="background:var(--soft);border-radius:12px;padding:1rem;text-align:center">
-          <img src="${prod.img}" alt="${prod.name}" style="max-width:100%;height:320px;object-fit:contain">
-        </div>
-      </div>
-      <div>
-        <h1>${prod.name}</h1>
-        <div style="color:var(--muted);margin-bottom:0.6rem">${prod.desc}</div>
-        <div style="font-size:1.2rem;color:var(--accent);font-weight:700">${rupiah(prod.price)}</div>
-        <div style="margin-top:1rem;display:flex;gap:0.6rem;align-items:center">
-          <label>Jumlah <input id="qtySelect" type="number" min="1" value="1" style="width:80px;padding:0.4rem;border-radius:8px;border:1px solid #e6eef0"></label>
-          <button id="addToCartBtn" class="btn btn-primary">Tambah ke Keranjang</button>
-          <a href="checkout.html" class="btn btn-ghost">Checkout</a>
-        </div>
-        <div style="margin-top:1.2rem;color:var(--muted)">
-          <strong>Terjual:</strong> ${prod.sold} &nbsp; | &nbsp; <strong>Kategori:</strong> ${prod.category}
-        </div>
-      </div>
-    </div>
-  `;
-  const btn = document.getElementById('addToCartBtn');
-  btn.addEventListener('click', ()=>{
-    const qty = parseInt(document.getElementById('qtySelect').value||'1',10);
-    addToCart(prod.id, qty);
-    btn.textContent = 'Ditambahkan ✓';
-    setTimeout(()=> btn.textContent = 'Tambah ke Keranjang', 900);
-  });
-}
-
-// ---- Hero slider basic ----
-function initSlider(){
-  const slider = document.getElementById('heroSlider');
-  if(!slider) return;
-  const slides = slider.querySelectorAll('.slide');
-  let idx = 0;
-  function show(i){ slides.forEach((s,si)=> s.style.display = (si===i? 'block':'none')); }
-  show(0);
-  const nextBtn = slider.querySelector('.next');
-  const prevBtn = slider.querySelector('.prev');
-  if(nextBtn) nextBtn.addEventListener('click', ()=> { idx = (idx+1)%slides.length; show(idx); });
-  if(prevBtn) prevBtn.addEventListener('click', ()=> { idx = (idx-1+slides.length)%slides.length; show(idx); });
-  setInterval(()=>{ idx=(idx+1)%slides.length; show(idx); }, 5000);
-}
+function getQty(id){ const cart = getCart(); const it = cart.find(x=>x.id===id); return it?it.qty:0; }
 
 // ---- Tooltip helper for cart buttons ----
 let _cartTooltipEl = null;
 function showCartTooltip(button, text = "Lihat keranjang Anda"){
-  // remove existing
-  if(_cartTooltipEl){
-    _cartTooltipEl.remove();
-    _cartTooltipEl = null;
-  }
+  if(_cartTooltipEl){ _cartTooltipEl.remove(); _cartTooltipEl = null; }
   const tip = document.createElement('div');
   tip.className = 'cart-tooltip';
   tip.textContent = text;
   document.body.appendChild(tip);
   _cartTooltipEl = tip;
 
-  // position (centered above button)
   const rect = button.getBoundingClientRect();
-  // temporarily make visible to measure
-  tip.style.left = '0px';
-  tip.style.top = '0px';
-  // small delay to ensure styles computed
+  tip.style.left = '0px'; tip.style.top = '0px';
   requestAnimationFrame(()=>{
     const tipRect = tip.getBoundingClientRect();
     let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
-    // keep within viewport
     left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
     let top = rect.top - tipRect.height - 12;
-    if(top < 8){ // if not enough space above, show below
-      top = rect.bottom + 10;
-    }
+    if(top < 8){ top = rect.bottom + 10; }
     tip.style.left = `${left}px`;
     tip.style.top = `${top}px`;
-    // show animation
     requestAnimationFrame(()=> tip.classList.add('show'));
   });
 
-  // auto-hide after 1.6s
   setTimeout(()=> {
     if(tip){
       tip.classList.remove('show');
@@ -274,9 +201,8 @@ function initCartOverlay(){
   const cartButtons = document.querySelectorAll('.cart-btn');
   cartButtons.forEach(b=>{
     b.addEventListener('click', (e)=>{
-      // Show tooltip briefly near the pressed button
+      // tooltip and open overlay (works on all pages)
       showCartTooltip(b);
-      // toggle overlay (open/close) with animation
       toggleCart();
     });
   });
@@ -286,29 +212,47 @@ function initCartOverlay(){
   if(close) close.addEventListener('click', ()=> toggleCart());
   overlay && overlay.addEventListener('click', (e)=> { if(e.target === overlay) toggleCart(); });
 
-  // ensure overlay initial state
-  const ov = document.getElementById('cartOverlay');
-  if(ov && !ov.classList.contains('open')){
-    ov.classList.remove('open');
-    ov.style.opacity = ''; // let CSS handle
-  }
+  // ensure overlay initial state class removed
+  if(overlay) overlay.classList.remove('open');
 }
 function toggleCart(){
   const overlay = document.getElementById('cartOverlay');
   if(!overlay) return;
   const isOpen = overlay.classList.contains('open');
   if(!isOpen){
-    // open: remove hidden then add open
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden','false');
-    // remove any tooltip quickly
     if(_cartTooltipEl){ _cartTooltipEl.classList.remove('show'); setTimeout(()=> _cartTooltipEl && _cartTooltipEl.remove(), 120); _cartTooltipEl = null; }
   } else {
-    // close: remove open then after transition, ensure state
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden','true');
-    // we don't need to set hidden class; CSS handles pointer-events via .open
   }
+}
+
+// ---- Mobile menu (hamburger) ----
+function initMobileMenu(){
+  const hamburgerBtns = document.querySelectorAll('#hamburgerBtn');
+  const mobileNav = document.getElementById('mobileNav');
+  const mobileNavClose = document.getElementById('mobileNavClose');
+  hamburgerBtns.forEach(h=>{
+    h.addEventListener('click', ()=> {
+      if(mobileNav) {
+        mobileNav.classList.add('open');
+        mobileNav.setAttribute('aria-hidden','false');
+      }
+    });
+  });
+  if(mobileNavClose) mobileNavClose.addEventListener('click', ()=> {
+    if(mobileNav){
+      mobileNav.classList.remove('open');
+      mobileNav.setAttribute('aria-hidden','true');
+    }
+  });
+  // close mobile menu when clicking a link inside
+  const mobileLinks = mobileNav ? mobileNav.querySelectorAll('a') : [];
+  mobileLinks.forEach(a=> a.addEventListener('click', ()=> {
+    if(mobileNav){ mobileNav.classList.remove('open'); mobileNav.setAttribute('aria-hidden','true'); }
+  }));
 }
 
 // ---- Filter on products page ----
@@ -369,9 +313,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('year3') && (document.getElementById('year3').textContent = new Date().getFullYear());
   document.getElementById('yearAbout') && (document.getElementById('yearAbout').textContent = new Date().getFullYear());
 
-  // render home product preview (take first 4)
+  // render content
   renderProductsGrid('productsGrid', PRODUCTS.slice(0,4));
-  renderProductsGrid('productsGridFull', PRODUCTS); // for products page (if present)
+  renderProductsGrid('productsGridFull', PRODUCTS);
   renderBestsellers();
   renderReviews();
   initSlider();
@@ -381,7 +325,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   renderProductDetail();
   initCheckoutForm();
   initScrollTop();
+  initMobileMenu();
 
-  // attach global events to update UI after modification
+  // attach global events
   window.addEventListener('storage', refreshCartUI);
 });
